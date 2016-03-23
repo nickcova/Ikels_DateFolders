@@ -111,7 +111,10 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
                                         else
                                         {
                                             CheckNodeStructure(contentDate, node, grandParentYear.Parent(), currentProvider);
-                                            SortDateFolders(node, currentProvider, currentConfig);
+
+                                            if(!currentProvider.orderBy.Equals("none"))
+                                                SortDateFolders(node, currentProvider, currentConfig);
+
                                             continue;
                                         }
                                     }
@@ -160,7 +163,7 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
                             {
                                 DateFolderProvider currentProvider = _dateFolderProviders.Find(x => x.providerName == currentConfig.providerName);
 
-                                if (node.Parent().ContentType.Alias.Equals(currentProvider.monthAlias))
+                                if (!currentProvider.orderBy.Equals("none") && node.Parent().ContentType.Alias.Equals(currentProvider.monthAlias))
                                 {
                                     SortDateFolders(node, currentProvider, currentConfig);
                                 }
@@ -198,12 +201,12 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
 
             if(currentIsContent)
             {
-                IComparer<IContent> dateComparer = new NodeDateTimeComparer(provider.dateProperty);
+                IComparer<IContent> dateComparer = new NodeDateTimeComparer(provider.dateProperty, provider.orderBy);
                 sortedChildren.Sort(dateComparer);
             }
             else
             {
-                IComparer<IContent> nameComparer = new NodeNameComparer();
+                IComparer<IContent> nameComparer = new NodeNameComparer(provider.orderBy);
                 sortedChildren.Sort(nameComparer);
             }          
 
@@ -319,6 +322,13 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
     /// </summary>
     public class NodeNameComparer : IComparer<IContent>
     {
+        private string _sortOrtder;
+
+        public NodeNameComparer(string sortOrder)
+        {
+            _sortOrtder = sortOrder;
+        }
+
         public int Compare(IContent x, IContent y)
         {
             int nameX = -1;
@@ -328,8 +338,14 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
 
             if (parseXOk && parseYOk)
             {
-                // Los comparo de manera invertida para que el orden sea descendiente
-                return nameY.CompareTo(nameX);
+                if(!String.IsNullOrEmpty(_sortOrtder) && !_sortOrtder.Equals("none"))
+                {
+                    if(_sortOrtder.Equals("asc"))
+                        return nameX.CompareTo(nameY);
+
+                    if(_sortOrtder.Equals("desc"))
+                        return nameY.CompareTo(nameX); // Los comparo de manera invertida para que el orden sea descendiente
+                }                
             }
 
             return 0;
@@ -343,20 +359,31 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
     public class NodeDateTimeComparer : IComparer<IContent>
     {
         private string _propertyAlias;
+        private string _sortOrder;
 
-        public NodeDateTimeComparer(string propertyAlias)
+        public NodeDateTimeComparer(string propertyAlias, string sortOrder)
         {
             _propertyAlias = propertyAlias;
+            _sortOrder = sortOrder;
         }
 
         public int Compare(IContent x, IContent y)
         {
-            if(!string.IsNullOrEmpty(_propertyAlias))
+            if(!string.IsNullOrEmpty(_propertyAlias) && !string.IsNullOrEmpty(_sortOrder))
             {
                 DateTime xDate = x.GetValue<DateTime>(_propertyAlias);
                 DateTime yDate = y.GetValue<DateTime>(_propertyAlias);
 
-                return yDate.CompareTo(xDate);
+                if(!_sortOrder.Equals("none"))
+                {
+                    if(_sortOrder.Equals("asc"))
+                        return xDate.CompareTo(yDate);
+
+                    if(_sortOrder.Equals("desc"))
+                        return yDate.CompareTo(xDate);
+
+                }
+                
             }
 
             return 0;
@@ -402,5 +429,8 @@ namespace Ikels_DateFolders_v7_X.EventHandlers
 
         [JsonProperty("rootAlias")]
         public string rootAlias { get; set; }
+
+        [JsonProperty("orderBy")]
+        public string orderBy { get; set; }
     }
 }

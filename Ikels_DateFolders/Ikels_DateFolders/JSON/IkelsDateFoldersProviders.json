@@ -1,0 +1,12 @@
+[
+  {
+    "providerName" : "DefaultProvider",
+    "monthAlias" : "monthAlias",
+    "monthFormat" : "MM",
+    "yearAlias" : "yearAlias",
+    "yearFormat" : "yyyy",
+    "dateProperty": "propertyAlias",
+    "rootAlias": "docTypeAlias",
+    "orderBy" :  "none"
+  }
+]
